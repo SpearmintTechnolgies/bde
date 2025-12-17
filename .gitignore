@@ -1,0 +1,147 @@
+# ============================================
+# BDE - Email Automation System
+# Git Ignore File
+# ============================================
+
+# ============================================
+# SENSITIVE FILES (NEVER COMMIT THESE!)
+# ============================================
+.env
+*.db
+*.sqlite
+*.sqlite3
+
+# API Keys or credential files
+credentials.json
+secrets.yaml
+*.key
+*.pem
+
+# Old script with hardcoded credentials
+script.py
+
+# ============================================
+# DATA & LOGS
+# ============================================
+data/logs/*.log
+data/*.db
+data/*.csv.backup
+data/temp/
+*.log
+
+# ============================================
+# PYTHON
+# ============================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# ============================================
+# IDE / EDITORS
+# ============================================
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# ============================================
+# OPERATING SYSTEM
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ============================================
+# TEMPORARY FILES
+# ============================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.~lock.*
+
+# ============================================
+# PROJECT SPECIFIC
+# ============================================
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Test outputs
+test_output/
+test_emails/
+
+# Downloaded data
+downloads/
+scraped_data/
