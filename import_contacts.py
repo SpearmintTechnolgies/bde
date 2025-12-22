@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 from config.settings import Config
 from modules.database import Database
-from modules.csv_loader import load_contacts
+from modules.csv_loader import load_contacts_csv
 
 
 def import_contacts_from_csv(csv_file: str = "contacts.csv"):
@@ -45,7 +45,7 @@ def import_contacts_from_csv(csv_file: str = "contacts.csv"):
     # Step 1: Load CSV
     print(f"\n[1/3] Loading contacts from {csv_file}...")
     try:
-        contacts = load_contacts(csv_file)
+        contacts = load_contacts_csv(csv_file)
         print(f"✓ Loaded {len(contacts)} contacts from CSV")
     except FileNotFoundError:
         print(f"✗ File not found: {csv_file}")
@@ -92,5 +92,10 @@ def import_contacts_from_csv(csv_file: str = "contacts.csv"):
 
 
 if __name__ == "__main__":
-    success = import_contacts_from_csv()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--csv', default='contacts.csv', help='CSV file to import')
+    args = parser.parse_args()
+    
+    success = import_contacts_from_csv(args.csv)
     sys.exit(0 if success else 1)

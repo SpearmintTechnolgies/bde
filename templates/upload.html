@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BDE - Email Automation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 50px;
+            border-radius: 24px;
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo-icon {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #718096;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .features {
+            background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 35px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .features-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .features ul {
+            list-style: none;
+        }
+        
+        .features li {
+            padding: 8px 0;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            font-size: 0.95em;
+        }
+        
+        .features li:before {
+            content: "✓";
+            color: #48bb78;
+            font-weight: bold;
+            font-size: 1.3em;
+            margin-right: 12px;
+        }
+        
+        .upload-zone {
+            border: 3px dashed #cbd5e0;
+            padding: 60px 30px;
+            text-align: center;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 30px 0;
+            background: #fafbfc;
+        }
+        
+        .upload-zone:hover {
+            background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .upload-zone.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            filter: grayscale(30%);
+        }
+        
+        .upload-text {
+            font-size: 1.2em;
+            color: #4a5568;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .upload-hint {
+            color: #a0aec0;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        
+        .file-info {
+            display: none;
+            background: #e6fffa;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #38b2ac;
+        }
+        
+        .file-info.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .file-name {
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.5);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .nav-link {
+            display: inline-block;
+            margin-top: 25px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 12px 25px;
+            background: #f0f4ff;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 25px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #4a5568;
+            font-size: 1.05em;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .alert.show {
+            display: block;
+        }
+        
+        .alert.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border-left: 4px solid #fc8181;
+        }
+        
+        .alert.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border-left: 4px solid #48bb78;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-icon">🚀</div>
+            <h1>BDE Email Automation</h1>
+            <p class="subtitle">AI-Powered Personalized Email Campaigns</p>
+        </div>
+        
+        <div class="features">
+            <div class="features-title">🎯 Automated Process</div>
+            <ul>
+                <li>Upload your CSV file with contacts</li>
+                <li>System scrapes company websites automatically</li>
+                <li>AI generates personalized emails for each contact</li>
+                <li>Sends emails one by one with smart timing</li>
+                <li>Track delivery status in real-time</li>
+            </ul>
+        </div>
+        
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFile').click()">
+            <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleFileSelect()">
+            <div class="upload-icon">📁</div>
+            <p class="upload-text" id="uploadText">Click to upload CSV file</p>
+            <p class="upload-hint">Drag and drop or click to browse</p>
+        </div>
+        
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+        </div>
+        
+        <div class="alert error" id="errorAlert"></div>
+        <div class="alert success" id="successAlert"></div>
+        
+        <button id="uploadBtn" onclick="uploadFile()" disabled>Start Campaign</button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p class="loading-text">Starting campaign... Please wait</p>
+        </div>
+        
+        <center>
+            <a href="/emails" class="nav-link">📧 View Sent Emails →</a>
+        </center>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // Drag and drop
+        const uploadZone = document.getElementById('uploadZone');
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('active');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('active');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('active');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('csvFile').files = files;
+                handleFileSelect();
+            }
+        });
+
+        function handleFileSelect() {
+            const fileInput = document.getElementById('csvFile');
+            selectedFile = fileInput.files[0];
+            
+            if (selectedFile) {
+                if (!selectedFile.name.endsWith('.csv')) {
+                    showError('Please select a valid CSV file');
+                    selectedFile = null;
+                    return;
+                }
+                
+                document.getElementById('fileName').textContent = `📄 ${selectedFile.name} (${formatFileSize(selectedFile.size)})`;
+                document.getElementById('fileInfo').classList.add('show');
+                document.getElementById('uploadBtn').disabled = false;
+                document.getElementById('uploadText').textContent = 'File ready to upload';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            else return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        function uploadFile() {
+            if (!selectedFile) return;
+            
+            const formData = new FormData();
+            formData.append('csv_file', selectedFile);
+            
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('loading').classList.add('show');
+            hideAlerts();
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess('Campaign started successfully! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = '/emails';
+                    }, 1500);
+                } else {
+                    showError(data.error || 'Upload failed');
+                    document.getElementById('loading').classList.remove('show');
+                    document.getElementById('uploadBtn').disabled = false;
+                }
+            })
+            .catch(err => {
+                showError('Error: ' + err.message);
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('uploadBtn').disabled = false;
+            });
+        }
+
+        function showError(message) {
+            const alert = document.getElementById('errorAlert');
+            alert.textContent = '❌ ' + message;
+            alert.classList.add('show');
+        }
+
+        function showSuccess(message) {
+            const alert = document.getElementById('successAlert');
+            alert.textContent = '✅ ' + message;
+            alert.classList.add('show');
+        }
+
+        function hideAlerts() {
+            document.getElementById('errorAlert').classList.remove('show');
+            document.getElementById('successAlert').classList.remove('show');
+        }
+    </script>
+</body>
+</html>

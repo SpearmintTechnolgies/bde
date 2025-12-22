@@ -39,7 +39,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from modules.database import Database, CampaignStatus
+from modules.database import Database
 from modules.email_sender import EmailSender
 from modules.web_scraper import WebScraper
 from modules.ai_personalizer import AIPersonalizer
@@ -81,7 +81,7 @@ def run_ai_campaign(campaign_id: int, batch_size: int = 10,
     print(f"   Batch Size: {batch_size} contacts")
     
     # Update campaign status
-    db.update_campaign_status(campaign_id, CampaignStatus.ACTIVE)
+    db.update_campaign_status(campaign_id, 'active')
     
     batch_num = 0
     total_sent = 0
@@ -103,7 +103,7 @@ def run_ai_campaign(campaign_id: int, batch_size: int = 10,
         
         if not contacts:
             print("\n✅ All emails sent! Campaign complete.")
-            db.update_campaign_status(campaign_id, CampaignStatus.COMPLETED)
+            db.update_campaign_status(campaign_id, 'completed')
             break
         
         print(f"📊 Processing {len(contacts)} contacts...")
@@ -177,8 +177,7 @@ def run_ai_campaign(campaign_id: int, batch_size: int = 10,
             )
             
             # Step 4: Log in database
-            from modules.database import EmailStatus
-            status = EmailStatus.SENT if success else EmailStatus.FAILED
+            status = 'sent' if success else 'failed'
             db.log_email_sent(
                 contact_id=contact['id'],
                 campaign_id=campaign_id,
@@ -220,10 +219,10 @@ def run_ai_campaign(campaign_id: int, batch_size: int = 10,
             response = input("\n▶ Continue to next batch? (y/n): ")
             if response.lower() != 'y':
                 print("\n⏸ Campaign paused. Run again to continue.")
-                db.update_campaign_status(campaign_id, CampaignStatus.PAUSED)
+                db.update_campaign_status(campaign_id, 'paused')
                 break
         else:
-            db.update_campaign_status(campaign_id, CampaignStatus.COMPLETED)
+            db.update_campaign_status(campaign_id, 'completed')
             break
     
     print("\n" + "="*70)

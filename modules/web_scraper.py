@@ -1,328 +1,168 @@
 """
-Website scraping module for enriching contact data.
+Multi-source web scraper orchestrator.
 
-This module scrapes company websites to gather information for email personalization:
-- Company description
-- Recent news/press releases
-- Product/service information
-- Investment focus (for VCs)
-- Team information
+Coordinates 3 independent research sources:
+1. WebsiteScraper: Company website HTML scraping
+2. LinkedInScraper: LinkedIn profile HTML scraping  
+3. GeminiResearcher: AI-powered research (no scraping!)
 
-The scraped data is stored in the database and used by AI to personalize emails.
-
-Usage:
-    from modules.web_scraper import WebScraper
-    
-    scraper = WebScraper()
-    data = scraper.scrape_website("https://example.com")
-    
-    # Store in database
-    db.update_contact_scraped_data(contact_id, data)
+Each source is a separate module for easy maintenance and modification.
 """
 
 import logging
-import json
-from typing import Dict, Optional, List
-from urllib.parse import urljoin, urlparse
+import time
+import random
+from typing import Any, Dict
 
-import requests
-from bs4 import BeautifulSoup
-
-from config.settings import Config
-from modules.utils import safe_request, clean_url, is_valid_url
+from modules.scrapers import WebsiteScraper, LinkedInScraper, GeminiResearcher
 
 logger = logging.getLogger(__name__)
 
 
 class WebScraper:
     """
-    Scrape and extract relevant information from company websites.
+    Orchestrates multi-source research by coordinating separate scrapers.
+    
+    This class doesn't scrape anything itself - it delegates to:
+    - WebsiteScraper: For company website scraping
+    - LinkedInScraper: For LinkedIn profile scraping
+    - GeminiResearcher: For AI-powered research
+    
+    Benefits of this architecture:
+    - Each source is independent and testable
+    - Easy to modify one source without affecting others
+    - Clear separation of concerns
+    
+    To modify a specific source:
+    - Website scraping → Edit modules/scrapers/website_scraper.py
+    - LinkedIn scraping → Edit modules/scrapers/linkedin_scraper.py
+    - Gemini AI research → Edit modules/scrapers/gemini_researcher.py
     """
-    
+
     def __init__(self):
-        """Initialize web scraper."""
-        self.timeout = Config.SCRAPING_TIMEOUT
-        self.max_retries = Config.MAX_RETRIES
-    
-    def scrape_website(self, url: str) -> Dict:
+        """Initialize orchestrator with individual scrapers."""
+        self.website_scraper = WebsiteScraper()
+        self.linkedin_scraper = LinkedInScraper()
+        self.gemini_researcher = GeminiResearcher()
+
+    def scrape_all_sources(self, contact: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Scrape a company website and extract relevant information.
+        Orchestrate multi-source research for a contact.
+        
+        Delegates to individual scrapers:
+        1. WebsiteScraper → Company website (HTML)
+        2. LinkedInScraper → LinkedIn profile (HTML)
+        3. GeminiResearcher → AI-powered research (no scraping!)
         
         Args:
-            url: Company website URL
-        
+            contact: Contact dict with website, linkedin_url, email, name, company
+            
         Returns:
-            dict: Scraped data including:
-                - description: Company description
-                - keywords: Relevant keywords
-                - recent_news: Recent announcements
-                - products: Products/services
-                - team_size: Estimated team size
-                - raw_text: Full cleaned text for AI processing
+            Combined data from all successful sources
         """
-        if not is_valid_url(url):
-            logger.warning(f"Invalid URL: {url}")
-            return self._empty_result()
+        combined_data = {
+            "sources_tried": [],
+            "sources_succeeded": [],
+            "website_data": None,
+            "linkedin_data": None,
+            "gemini_data": None,
+            "description": "",
+            "keywords": [],
+            "company_focus": "",
+            "content_summary": "",
+            "social_links": {},
+        }
         
-        url = clean_url(url)
-        logger.info(f"Scraping website: {url}")
+        # 1. Website scraping (using WebsiteScraper module)
+        website = contact.get("website", "")
+        if website:
+            combined_data["sources_tried"].append("website")
+            website_data = self.website_scraper.scrape(website)
+            
+            if website_data:
+                combined_data["website_data"] = website_data
+                combined_data["sources_succeeded"].append("website")
+                
+                # Merge website data
+                combined_data["description"] = website_data.get("description", "")
+                combined_data["keywords"] = website_data.get("keywords", [])
+                combined_data["company_focus"] = website_data.get("company_focus", "")
+                combined_data["social_links"] = website_data.get("social_links", {})
+                combined_data["content_summary"] = website_data.get("content_summary", "")
         
-        try:
-            # Get homepage
-            response = safe_request(url, retries=self.max_retries, timeout=self.timeout)
-            if not response:
-                return self._empty_result()
+        # Small delay between requests
+        time.sleep(random.uniform(1, 2))
+        
+        # 2. LinkedIn scraping (using LinkedInScraper module)
+        linkedin_url = contact.get("linkedin_url", "")
+        if linkedin_url:
+            combined_data["sources_tried"].append("linkedin")
+            linkedin_data = self.linkedin_scraper.scrape(linkedin_url)
             
-            soup = BeautifulSoup(response.text, 'html.parser')
+            if linkedin_data:
+                combined_data["linkedin_data"] = linkedin_data
+                combined_data["sources_succeeded"].append("linkedin")
+                
+                # Append LinkedIn content to summary
+                if linkedin_data.get("content_summary"):
+                    combined_data["content_summary"] += "\n\nLinkedIn: " + linkedin_data["content_summary"]
+        
+        # Small delay
+        time.sleep(random.uniform(1, 2))
+        
+        # 3. Gemini AI research (using GeminiResearcher module - NO SCRAPING!)
+        email = contact.get("email", "")
+        name = contact.get("name", "")
+        company = contact.get("company", "")
+        title = contact.get("title", "")
+        
+        if email and name and self.gemini_researcher.is_available():
+            combined_data["sources_tried"].append("gemini_ai")
+            gemini_data = self.gemini_researcher.research(email, name, company, title)
             
-            # Extract various data points
-            result = {
-                'url': url,
-                'description': self._extract_description(soup, url),
-                'keywords': self._extract_keywords(soup),
-                'recent_news': self._extract_news(soup, url),
-                'products': self._extract_products(soup),
-                'team_size': self._estimate_team_size(soup),
-                'social_links': self._extract_social_links(soup),
-                'raw_text': self._extract_clean_text(soup),
-                'meta_info': self._extract_meta_tags(soup)
-            }
-            
-            logger.info(f"Successfully scraped {url}")
-            return result
-            
-        except Exception as e:
-            logger.error(f"Error scraping {url}: {e}")
-            return self._empty_result()
-    
-    def scrape_about_page(self, base_url: str) -> Optional[str]:
+            if gemini_data.get("success"):
+                combined_data["gemini_data"] = gemini_data
+                combined_data["sources_succeeded"].append("gemini_ai")
+                
+                # Gemini provides AI-summarized content (no HTML parsing needed!)
+                # If we don't have description from website, use Gemini summary
+                if not combined_data["description"] and gemini_data.get("description"):
+                    combined_data["description"] = gemini_data["description"]
+                
+                # Append Gemini AI research to summary
+                if gemini_data.get("content_summary"):
+                    combined_data["content_summary"] += "\n\nGemini AI Research: " + gemini_data["content_summary"]
+                
+                logger.info("✅ Gemini AI research succeeded (%d chars)", len(gemini_data.get("summary", "")))
+        
+        # Trim content summary to max length
+        if combined_data["content_summary"]:
+            combined_data["content_summary"] = combined_data["content_summary"][:3000]
+        
+        # Log summary
+        logger.info(
+            "Scraping complete: %d/%d sources succeeded (%s)",
+            len(combined_data["sources_succeeded"]),
+            len(combined_data["sources_tried"]),
+            ", ".join(combined_data["sources_succeeded"]) or "none"
+        )
+        
+        return combined_data
+
+    def scrape_website(self, url: str) -> Dict[str, Any]:
         """
-        Find and scrape the About page for more detailed information.
+        Legacy method: Scrape just the website.
+        
+        For backward compatibility with existing code.
+        Use scrape_all_sources() for full multi-source scraping.
         
         Args:
-            base_url: Company website homepage URL
-        
+            url: Website URL to scrape
+            
         Returns:
-            str or None: About page content
+            Parsed website data or error dict
         """
-        about_urls = [
-            urljoin(base_url, '/about'),
-            urljoin(base_url, '/about-us'),
-            urljoin(base_url, '/about/'),
-            urljoin(base_url, '/company'),
-        ]
+        if not url:
+            return {"error": "No URL provided"}
         
-        for url in about_urls:
-            try:
-                response = safe_request(url, retries=1, timeout=5)
-                if response and response.status_code == 200:
-                    soup = BeautifulSoup(response.text, 'html.parser')
-                    return self._extract_clean_text(soup)
-            except:
-                continue
-        
-        return None
-    
-    def _extract_description(self, soup: BeautifulSoup, url: str) -> str:
-        """Extract company description from meta tags or first paragraphs."""
-        # Try meta description first
-        meta_desc = soup.find('meta', attrs={'name': 'description'})
-        if meta_desc and meta_desc.get('content'):
-            return meta_desc['content'].strip()
-        
-        # Try Open Graph description
-        og_desc = soup.find('meta', attrs={'property': 'og:description'})
-        if og_desc and og_desc.get('content'):
-            return og_desc['content'].strip()
-        
-        # Fall back to first substantial paragraph
-        paragraphs = soup.find_all('p')
-        for p in paragraphs[:5]:
-            text = p.get_text().strip()
-            if len(text) > 100:  # Substantial content
-                return text[:500]  # Limit length
-        
-        return "No description found"
-    
-    def _extract_keywords(self, soup: BeautifulSoup) -> List[str]:
-        """Extract relevant keywords from meta tags and headers."""
-        keywords = []
-        
-        # Meta keywords
-        meta_keywords = soup.find('meta', attrs={'name': 'keywords'})
-        if meta_keywords and meta_keywords.get('content'):
-            keywords.extend([k.strip() for k in meta_keywords['content'].split(',')])
-        
-        # Extract from headers
-        headers = soup.find_all(['h1', 'h2', 'h3'])
-        for header in headers[:10]:
-            text = header.get_text().strip()
-            if text and len(text) < 100:
-                keywords.append(text)
-        
-        return keywords[:20]  # Limit to top 20
-    
-    def _extract_news(self, soup: BeautifulSoup, base_url: str) -> List[str]:
-        """Extract recent news or blog posts."""
-        news_items = []
-        
-        # Look for common news/blog selectors
-        selectors = [
-            'article',
-            '.news-item',
-            '.blog-post',
-            '.press-release',
-            '[class*="news"]',
-            '[class*="blog"]'
-        ]
-        
-        for selector in selectors:
-            items = soup.select(selector)
-            for item in items[:5]:
-                title = item.find(['h1', 'h2', 'h3', 'h4'])
-                if title:
-                    news_items.append(title.get_text().strip())
-        
-        return news_items[:5]  # Top 5 news items
-    
-    def _extract_products(self, soup: BeautifulSoup) -> List[str]:
-        """Extract product or service names."""
-        products = []
-        
-        # Look for product-related sections
-        product_sections = soup.find_all(['div', 'section'], class_=lambda c: c and any(
-            term in c.lower() for term in ['product', 'service', 'solution', 'offering']
-        ))
-        
-        for section in product_sections[:5]:
-            headers = section.find_all(['h2', 'h3', 'h4'])
-            for header in headers:
-                text = header.get_text().strip()
-                if text and len(text) < 100:
-                    products.append(text)
-        
-        return products[:10]
-    
-    def _estimate_team_size(self, soup: BeautifulSoup) -> Optional[str]:
-        """Estimate team size from Team/About pages."""
-        # Look for team member listings
-        team_indicators = soup.find_all(class_=lambda c: c and any(
-            term in c.lower() for term in ['team', 'member', 'employee', 'staff']
-        ))
-        
-        if len(team_indicators) > 20:
-            return "Large (50+)"
-        elif len(team_indicators) > 10:
-            return "Medium (10-50)"
-        elif len(team_indicators) > 5:
-            return "Small (5-10)"
-        else:
-            return "Startup (<5)"
-    
-    def _extract_social_links(self, soup: BeautifulSoup) -> Dict[str, str]:
-        """Extract social media links."""
-        social_links = {}
-        
-        social_domains = {
-            'linkedin.com': 'linkedin',
-            'twitter.com': 'twitter',
-            'facebook.com': 'facebook',
-            'github.com': 'github',
-            'youtube.com': 'youtube'
-        }
-        
-        links = soup.find_all('a', href=True)
-        for link in links:
-            href = link['href']
-            for domain, name in social_domains.items():
-                if domain in href:
-                    social_links[name] = href
-                    break
-        
-        return social_links
-    
-    def _extract_clean_text(self, soup: BeautifulSoup) -> str:
-        """
-        Extract clean, readable text from page (for AI processing).
-        
-        This removes scripts, styles, navigation, footers, etc.
-        """
-        # Remove unwanted elements
-        for element in soup(['script', 'style', 'nav', 'footer', 'header', 'iframe', 'noscript']):
-            element.decompose()
-        
-        # Get text from main content areas
-        main_content = soup.find('main') or soup.find('article') or soup.body
-        if not main_content:
-            return ""
-        
-        # Get text
-        text = main_content.get_text(separator=' ', strip=True)
-        
-        # Clean up whitespace
-        text = ' '.join(text.split())
-        
-        # Limit length (for AI token limits)
-        return text[:5000]
-    
-    def _extract_meta_tags(self, soup: BeautifulSoup) -> Dict[str, str]:
-        """Extract useful meta tags."""
-        meta_info = {}
-        
-        # Common meta tags
-        meta_tags = {
-            'og:title': 'title',
-            'og:type': 'type',
-            'og:image': 'image',
-            'twitter:card': 'twitter_card',
-            'author': 'author'
-        }
-        
-        for meta_name, key in meta_tags.items():
-            meta = soup.find('meta', attrs={'property': meta_name}) or \
-                   soup.find('meta', attrs={'name': meta_name})
-            if meta and meta.get('content'):
-                meta_info[key] = meta['content']
-        
-        return meta_info
-    
-    def _empty_result(self) -> Dict:
-        """Return empty result structure."""
-        return {
-            'url': '',
-            'description': '',
-            'keywords': [],
-            'recent_news': [],
-            'products': [],
-            'team_size': None,
-            'social_links': {},
-            'raw_text': '',
-            'meta_info': {}
-        }
-    
-    def scrape_contact_data(self, contact: Dict) -> Dict:
-        """
-        Scrape website data for a contact.
-        
-        Args:
-            contact: Contact dict with 'company_website' field
-        
-        Returns:
-            dict: Scraped data with 'scraped_data' key (JSON string)
-        """
-        website = contact.get('company_website')
-        if not website:
-            logger.debug(f"No website for contact: {contact.get('email')}")
-            return {}
-        
-        scraped = self.scrape_website(website)
-        
-        # Also try to get About page
-        about_text = self.scrape_about_page(website)
-        if about_text:
-            scraped['about_page'] = about_text
-        
-        return {
-            'scraped_data': json.dumps(scraped),
-            'scraped_at': None  # Will be set by database
-        }
+        return self.website_scraper.scrape(url) or {"error": f"Failed to scrape {url}"}

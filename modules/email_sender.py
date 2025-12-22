@@ -19,7 +19,7 @@ from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
 
 from config.settings import Config
-from modules.database import Database, EmailStatus
+from modules.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +132,7 @@ class EmailSender:
             )
             
             # Log result in database
-            status = EmailStatus.SENT if success else EmailStatus.FAILED
+            status = 'sent' if success else 'failed'
             error_msg = None if success else "SMTP send failed"
             
             self.db.log_email_sent(

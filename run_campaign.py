@@ -31,7 +31,7 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-from modules.database import Database, CampaignStatus
+from modules.database import Database
 from modules.email_sender import EmailSender
 
 
@@ -83,7 +83,7 @@ def run_campaign(campaign_id: int, batch_size: int = None, max_batches: int = No
     
     # Update campaign status to active
     if campaign['status'] != 'active':
-        db.update_campaign_status(campaign_id, CampaignStatus.ACTIVE)
+        db.update_campaign_status(campaign_id, 'active')
         print(f"  Campaign status updated to ACTIVE")
     
     # Run batches
@@ -145,7 +145,7 @@ def run_campaign(campaign_id: int, batch_size: int = None, max_batches: int = No
     print(f"    - Pending: {final_stats['pending']}")
     
     if final_stats['pending'] == 0:
-        db.update_campaign_status(campaign_id, CampaignStatus.COMPLETED)
+        db.update_campaign_status(campaign_id, 'completed')
         print(f"\n✓ Campaign marked as COMPLETED")
     
     print()

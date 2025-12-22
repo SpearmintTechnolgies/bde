@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BDE - Sent Emails</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f7fafc;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            opacity: 0.95;
+            font-size: 1.1em;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.25);
+        }
+        
+        .stat-card h3 {
+            font-size: 3em;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        
+        .stat-card p {
+            opacity: 0.9;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-card.success h3 { color: #68d391; }
+        .stat-card.pending h3 { color: #fbd38d; }
+        .stat-card.failed h3 { color: #fc8181; }
+        
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 30px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .search-box {
+            padding: 14px 24px;
+            border: 2px solid #e2e8f0;
+            border-radius: 50px;
+            width: 100%;
+            max-width: 400px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .email-table-container {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        th {
+            padding: 20px 24px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        td {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.95em;
+        }
+        
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+        
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-badge.sent {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-badge.pending {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+        
+        .status-badge.failed {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .status-badge.sending {
+            background: #bee3f8;
+            color: #2c5282;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+        
+        .email-cell {
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .name-cell {
+            color: #2d3748;
+            font-weight: 600;
+        }
+        
+        .company-cell {
+            color: #718096;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+            color: #a0aec0;
+        }
+        
+        .empty-state .icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+        
+        .empty-state h3 {
+            color: #4a5568;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+        
+        .empty-state p {
+            color: #718096;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 5px solid #f3f4f6;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .campaign-status {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: none;
+        }
+        
+        .campaign-status.show {
+            display: block;
+        }
+        
+        .campaign-status.running {
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .status-text {
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📧 Email Campaign Dashboard</h1>
+            <p>Real-time tracking of all sent emails</p>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <h3 id="totalCount">-</h3>
+                    <p>Total Contacts</p>
+                </div>
+                <div class="stat-card success">
+                    <h3 id="sentCount">-</h3>
+                    <p>Successfully Sent</p>
+                </div>
+                <div class="stat-card pending">
+                    <h3 id="pendingCount">-</h3>
+                    <p>Pending</p>
+                </div>
+                <div class="stat-card failed">
+                    <h3 id="failedCount">-</h3>
+                    <p>Failed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="campaign-status" id="campaignStatus">
+            <div class="status-text" id="statusText">🚀 Campaign is running...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <!-- Progress Details -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                <div style="text-align: center;">
+                    <div style="font-size: 1.8em; font-weight: 700; color: #667eea;" id="scrapedProgress">0</div>
+                    <div style="font-size: 0.85em; color: #718096;">Websites Scraped</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 1.8em; font-weight: 700; color: #764ba2;" id="aiProgress">0</div>
+                    <div style="font-size: 0.85em; color: #718096;">AI Processed</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 1.8em; font-weight: 700; color: #48bb78;" id="sentProgress">0</div>
+                    <div style="font-size: 0.85em; color: #718096;">Emails Sent</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 1.8em; font-weight: 700; color: #f56565;" id="failedProgress">0</div>
+                    <div style="font-size: 0.85em; color: #718096;">Failed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Logs Panel -->
+        <div id="logsPanel" style="display: none; background: white; padding: 25px; border-radius: 16px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); max-height: 400px; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px;">
+                <h3 style="color: #2d3748; font-size: 1.1em; display: flex; align-items: center;">
+                    <span style="font-size: 1.5em; margin-right: 10px;">📋</span> Live Campaign Logs
+                </h3>
+                <button onclick="toggleLogs()" style="background: #f7fafc; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em;">
+                    Hide Logs
+                </button>
+            </div>
+            <div id="logsContent" style="font-family: 'Courier New', monospace; font-size: 0.85em; line-height: 1.8;"></div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button onclick="toggleLogs()" id="showLogsBtn" class="btn btn-secondary" style="display: none;">
+                📋 Show Live Logs
+            </button>
+        </div>
+
+        <div class="controls">
+            <input 
+                type="text" 
+                class="search-box" 
+                id="searchBox" 
+                placeholder="🔍 Search by name, email, or company..."
+                onkeyup="filterTable()"
+            >
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="loadEmails()">🔄 Refresh</button>
+                <a href="/" class="btn btn-secondary">← Upload New CSV</a>
+            </div>
+        </div>
+
+        <div style="background: white; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="color: #4a5568; font-weight: 500;">
+                Showing <span id="displayCount" style="color: #667eea; font-weight: 600;">0</span> attempted emails
+            </div>
+            <div style="color: #718096; font-size: 0.9em;">
+                Updates automatically every 5 seconds
+            </div>
+        </div>
+
+        <div class="email-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80px; text-align: center;">Sr. No.</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Company</th>
+                        <th style="width: 120px; text-align: center;">Status</th>
+                        <th style="width: 180px;">Sent At</th>
+                    </tr>
+                </thead>
+                <tbody id="emailBody">
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="icon">⏳</div>
+                                <h3>Loading emails...</h3>
+                                <p>Please wait while we fetch your data</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p style="color: #4a5568; font-weight: 600;">Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        let allEmails = [];
+        let isLoading = false;
+
+        function loadEmails() {
+            if (isLoading) return;
+            isLoading = true;
+
+            fetch('/api/emails')
+                .then(r => r.json())
+                .then(emails => {
+                    allEmails = emails;
+                    displayEmails(emails);
+                    isLoading = false;
+                })
+                .catch(err => {
+                    console.error('Error loading emails:', err);
+                    isLoading = false;
+                });
+        }
+
+        function loadStats() {
+            fetch('/api/stats')
+                .then(r => r.json())
+                .then(stats => {
+                    document.getElementById('totalCount').textContent = stats.total || 0;
+                    document.getElementById('sentCount').textContent = stats.sent || 0;
+                    document.getElementById('pendingCount').textContent = stats.pending || 0;
+                    document.getElementById('failedCount').textContent = stats.failed || 0;
+                })
+                .catch(err => {
+                    console.error('Error loading stats:', err);
+                });
+        }
+
+        function displayEmails(emails) {
+            const tbody = document.getElementById('emailBody');
+            
+            // Update display count
+            document.getElementById('displayCount').textContent = emails.length;
+            
+            if (emails.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="icon">📭</div>
+                                <h3>No emails attempted yet</h3>
+                                <p>Upload a CSV file to start your campaign</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = emails.map(email => `
+                <tr>
+                    <td style="text-align: center; font-weight: 600; color: #667eea;">${email.sr_no}</td>
+                    <td class="name-cell">${escapeHtml(email.name)}</td>
+                    <td class="email-cell">${escapeHtml(email.email)}</td>
+                    <td class="company-cell">${escapeHtml(email.company)}</td>
+                    <td style="text-align: center;"><span class="status-badge ${email.status}">${email.status}</span></td>
+                    <td>${escapeHtml(email.sent_at)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTable() {
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            const filtered = allEmails.filter(email => 
+                email.email.toLowerCase().includes(search) ||
+                email.name.toLowerCase().includes(search) ||
+                email.company.toLowerCase().includes(search)
+            );
+            displayEmails(filtered);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function checkCampaignStatus() {
+            fetch('/api/status')
+                .then(r => r.json())
+                .then(status => {
+                    const statusDiv = document.getElementById('campaignStatus');
+                    const logsPanel = document.getElementById('logsPanel');
+                    const showLogsBtn = document.getElementById('showLogsBtn');
+                    
+                    if (status.running) {
+                        statusDiv.classList.add('show', 'running');
+                        showLogsBtn.style.display = 'inline-block';
+                        
+                        const progress = status.total > 0 ? (status.current / status.total * 100) : 0;
+                        document.getElementById('progressFill').style.width = progress + '%';
+                        document.getElementById('statusText').textContent = 
+                            `🚀 ${status.current_step || 'Campaign running...'} (${status.current}/${status.total})`;
+                        
+                        // Update progress counters
+                        document.getElementById('scrapedProgress').textContent = status.scraped_count || 0;
+                        document.getElementById('aiProgress').textContent = status.ai_processed_count || 0;
+                        document.getElementById('sentProgress').textContent = status.sent_count || 0;
+                        document.getElementById('failedProgress').textContent = status.failed_count || 0;
+                        
+                        // Update logs
+                        if (status.logs && status.logs.length > 0) {
+                            const logsHtml = status.logs.slice(-50).reverse().map(log => {
+                                const color = log.level === 'error' ? '#f56565' :
+                                             log.level === 'success' ? '#48bb78' :
+                                             log.level === 'warning' ? '#ed8936' : '#4a5568';
+                                return `<div style="color: ${color}; padding: 4px 0;">[${log.time}] ${escapeHtml(log.message)}</div>`;
+                            }).join('');
+                            document.getElementById('logsContent').innerHTML = logsHtml;
+                        }
+                    } else {
+                        statusDiv.classList.remove('show');
+                        if (status.logs && status.logs.length > 0) {
+                            // Keep logs visible even after campaign stops
+                            showLogsBtn.style.display = 'inline-block';
+                        }
+                    }
+                });
+        }
+
+        function toggleLogs() {
+            const logsPanel = document.getElementById('logsPanel');
+            const showLogsBtn = document.getElementById('showLogsBtn');
+            
+            if (logsPanel.style.display === 'none') {
+                logsPanel.style.display = 'block';
+                showLogsBtn.style.display = 'none';
+            } else {
+                logsPanel.style.display = 'none';
+                showLogsBtn.style.display = 'inline-block';
+            }
+        }
+
+        // Load data on page load
+        loadEmails();
+        loadStats();
+        checkCampaignStatus();
+
+        // Auto-refresh every 5 seconds
+        setInterval(() => {
+            loadEmails();
+            loadStats();
+            checkCampaignStatus();
+        }, 5000);
+    </script>
+</body>
+</html>

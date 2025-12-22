@@ -37,14 +37,15 @@ class Config:
     # OPENAI API CONFIGURATION
     # ============================================
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+    # OpenAI model used for personalization (default)
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5-mini")
     
     # ============================================
-    # CAMPAIGN SETTINGS
+    # CAMPAIGN SETTINGS (Optimized for Hostinger reliability)
     # ============================================
-    MAX_EMAILS_PER_RUN = int(os.getenv("MAX_EMAILS_PER_RUN", "260"))
-    MIN_DELAY_SECONDS = int(os.getenv("MIN_DELAY_SECONDS", "120"))
-    MAX_DELAY_SECONDS = int(os.getenv("MAX_DELAY_SECONDS", "180"))
+    MAX_EMAILS_PER_RUN = int(os.getenv("MAX_EMAILS_PER_RUN", "200"))  # Safe daily limit
+    MIN_DELAY_SECONDS = int(os.getenv("MIN_DELAY_SECONDS", "8"))  # 8-12s between emails
+    MAX_DELAY_SECONDS = int(os.getenv("MAX_DELAY_SECONDS", "12"))
     
     # Note: Fit score is calculated for analytics only, not for filtering
     # All contacts in CSV will receive emails regardless of fit score
@@ -60,8 +61,8 @@ class Config:
     POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
     POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
     
-    # Batch processing settings
-    BATCH_SIZE = int(os.getenv("BATCH_SIZE", "50"))  # Process contacts in batches
+    # Batch processing settings (Conservative for reliability)
+    BATCH_SIZE = int(os.getenv("BATCH_SIZE", "25"))  # Smaller batches = more reliable
     
     # Legacy SQLite path (kept for backward compatibility)
     DATABASE_PATH = os.getenv("DATABASE_PATH", "data/sent_emails.db")
@@ -86,6 +87,13 @@ class Config:
     PROXY_URL = os.getenv("PROXY_URL")
     PROXY_USERNAME = os.getenv("PROXY_USERNAME")
     PROXY_PASSWORD = os.getenv("PROXY_PASSWORD")
+    
+    # Google Gemini AI with Search Grounding
+    GOOGLE_GEMINI_API_KEY: str = os.getenv("GOOGLE_GEMINI_API_KEY", "")
+    
+    # Legacy Google Custom Search API (can be removed)
+    GOOGLE_SEARCH_API_KEY: str = os.getenv("GOOGLE_SEARCH_API_KEY", "")
+    GOOGLE_SEARCH_ENGINE_ID: str = os.getenv("GOOGLE_SEARCH_ENGINE_ID", "")
     
     # ============================================
     # PROJECT PATHS

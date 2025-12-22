@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Import our modules
 from config.settings import Config
-from modules.database import Database, Contact, Campaign, EmailLog, EmailStatus, CampaignStatus
+from modules.database import Database, Contact, Campaign, EmailLog
 
 def test_database_setup():
     """Test database connection and setup."""
@@ -84,8 +84,10 @@ def test_database_setup():
         # Test adding a contact
         test_contact = {
             'email': 'test@example.com',
-            'full_name': 'Test User',
-            'company': 'Test Company'
+            'first_name': 'Test',
+            'last_name': 'User',
+            'company': 'Test Company',
+            'website': 'www.test.com'
         }
         
         contact_id = db.add_contact(test_contact)
@@ -95,24 +97,47 @@ def test_database_setup():
             print("  Contact already exists (this is okay)")
         
         # Test getting contact
-        contact = db.get_contact_by_email('test@example.com')
+        session = db.get_session()
+        contact = session.query(Contact).filter(Contact.email == 'test@example.com').first()
         if contact:
-            print(f"✓ Retrieved contact: {contact['full_name']}")
+            name = f"{contact.first_name} {contact.last_name}".strip()
+            print(f"✓ Retrieved contact: {name}")
+        session.close()
         
         # Test contact count
-        count = db.get_all_contacts_count()
+        session = db.get_session()
+        count = session.query(Contact).count()
         print(f"✓ Total contacts in database: {count}")
+        session.close()
         
         # Test creating a campaign
-        campaign_id = db.create_campaign(
-            name="Test Campaign",
+        session = db.get_session()
+        from modules.database import Campaign, Template
+        
+        # Create template first
+        template = Template(
+            name="Test Template",
             subject="Test Subject",
-            body_text="Test body"
+            body="Test body content"
         )
-        print(f"✓ Created test campaign (ID: {campaign_id})")
+        session.add(template)
+        session.commit()
+        
+        # Create campaign
+        campaign = Campaign(
+            name="Test Campaign",
+            template_id=template.id,
+            status='draft'
+        )
+        session.add(campaign)
+        session.commit()
+        print(f"✓ Created test campaign (ID: {campaign.id})")
+        session.close()
         
     except Exception as e:
         print(f"✗ Operations test failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
     
     print("\n" + "=" * 60)
